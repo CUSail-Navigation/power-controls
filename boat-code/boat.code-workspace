@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../boat"
+		},
+		{
+			"name": "boat-code",
+			"path": "."
+		}
+	],
+	"settings": {}
+}
