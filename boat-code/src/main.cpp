@@ -13,6 +13,8 @@ bool relay_5v_state   = true;
 bool relay_vnav_state = true;
 bool relay_3v_state   = true;
 
+unsigned long prevTime = 0;
+
 void setup() {
   xbee.begin(9600); 
 
@@ -30,6 +32,8 @@ void setup() {
 
 void loop() {
 
+  unsigned long currTime = millis();
+
   // Read from XBee
   if (xbee.available()) {
     char data = xbee.read();
@@ -37,15 +41,19 @@ void loop() {
     switch (data) {
     case '1':
         relay_12v_state = !relay_12v_state;
+        xbee.print('1');
         break;
     case '2':
         relay_5v_state = !relay_5v_state;
+        xbee.print('2');
         break;
     case '3':
         relay_vnav_state = !relay_vnav_state;
+        xbee.print('3');
         break;
     case '4':
         relay_3v_state = !relay_3v_state;
+        xbee.print('4');
         break;
     }
   }
@@ -57,5 +65,9 @@ void loop() {
   digitalWrite(relay_3v  , relay_3v_state  );
 
   // Write to XBee
-  //xbee.print('a'); // Send to other XBee
+  if (currTime - prevTime > 5000) {
+    xbee.print('W'); // Send to other XBee
+    prevTime = currTime;
+  }
+
 }
