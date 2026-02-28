@@ -44,6 +44,7 @@ void setup() {
   digitalWrite(relay_3v  , relay_3v_state  );
   
   Serial.begin(9600);
+  // reads state of LEDs
   pinMode(pin2, INPUT);
   pinMode(pin3, INPUT);
   pinMode(pin4, INPUT);
@@ -63,6 +64,8 @@ void loop() {
   digitalWrite(pin8, HIGH);
   digitalWrite(pin9, HIGH);
 
+  // before updating state, check if it has changed from before
+  // if so, invert relay state and print '1' to Xbee
   if (digitalRead(pin2) != state2) {
     data = 1;
     relay_12v_state = !relay_12v_state;
@@ -87,15 +90,17 @@ void loop() {
     xbee.print('4');
   } 
 
+  // serial monitor for debugging
   Serial.println(data);
 
+  // updates state NOW
   state2 = digitalRead(pin2);
   state3 = digitalRead(pin3);
   state4 = digitalRead(pin4);
   state5 = digitalRead(pin5);
 
   // print states (for debugging)
-  
+
   Serial.print("D2 state: ");
   Serial.print(state2);
   Serial.print(" | D3 state: ");
@@ -105,15 +110,10 @@ void loop() {
   Serial.print(" | D5 state: ");
   Serial.println(state5);
 
-  // Small delay to prevent spamming the serial monitor too quickly
+  // small delay to prevent spamming the serial monitor too quickly
   delay(1000);
 
-  // send 1234 to XBee if state of switch is 0 (closed)
-  if (xbee.available()) {
-    Serial.println("available");
-  }
-
-  // Set relay states
+  // set relay states
   digitalWrite(relay_12v , relay_12v_state );
   digitalWrite(relay_5v  , relay_5v_state  );
   digitalWrite(relay_vnav, relay_vnav_state);
