@@ -1,20 +1,38 @@
 #include <Arduino.h>
 
-int LEDpin = 2; // or use the predefined LED_BUILTIN
-int delayT = 1000; // milliseconds
+#define POSITION_NUM 4
+#define ON LOW
+#define OFF HIGH
+
+// define the pins connected to the dip switch
+const int SWITCH_PINS[] = {9};
 
 void setup() {
-  // Initialize the digital pin as an output:
-  pinMode(LEDpin, OUTPUT);
+  // initialize serial communication
+  Serial.begin(9600);
+
+  // set the dip switch pins as inputs with pull-up resistors enabled
+  for (int i = 0; i < POSITION_NUM; i++)
+    pinMode(SWITCH_PINS[i], INPUT_PULLUP);
 }
 
 void loop() {
-  // Turn the LED on (HIGH voltage level is 5V):
-  digitalWrite(LEDpin, HIGH);
-  // Wait for a second (1000 milliseconds):
-  delay(delayT);
-  // Turn the LED off (LOW voltage level is 0V):
-  digitalWrite(LEDpin, LOW);
-  // Wait for a second:
-  delay(delayT);
+
+  // Read the state of each switch position
+  for (int i = 0; i < POSITION_NUM; i++) {
+    Serial.print("position ");
+    Serial.print(i + 1);
+    Serial.print(": ");
+    int state = digitalRead(SWITCH_PINS[i]);
+
+    if (state == ON)
+      Serial.println("ON ");
+    else
+      Serial.println("OFF ");
+  }
+  
+  Serial.println();
+
+  // add a delay to prevent rapid readings
+  delay(500);
 }
