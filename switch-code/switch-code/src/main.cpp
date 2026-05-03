@@ -1,42 +1,37 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
 
+// Some code not currently being used because we
+// do not have the boat breadboard right now
 SoftwareSerial xbee(11, 12); 
 
-const int relay_12v  = 7; // red
-const int relay_5v   = 6; // green
-const int relay_vnav = 5; // blue
-const int relay_3v   = 4; // yellow
+const int panic_button   = 10; // Button, need to change this physically
+bool panic = false;
+
+const int relay_12v  = 5; // White
+const int relay_5v   = 4; // Yellow
+const int relay_vnav = 3; // Red
+const int relay_3v   = 2; // Blue
 
 bool relay_12v_state  = false;
 bool relay_5v_state   = false;
 bool relay_vnav_state = false;
 bool relay_3v_state   = false;
 
-// read switch state and send number to XBee
+bool white_state  = false;
+bool yellow_state = false;
+bool red_state    = false;
+bool blue_state   = false;
 
-const int pin2 = 2;
-const int pin3 = 3;
-const int pin4 = 4;
-const int pin5 = 5;
-
-const int pin6 = 6;
-const int pin7 = 7;
-const int pin8 = 8;
-const int pin9 = 9;
-
-int data = 0;
-int state2 = 1;
-int state3 = 1;
-int state4 = 1;
-int state5 = 1;
+// Read switch state and send number to XBee
 
 void setup() {
   xbee.begin(9600);
-  pinMode(relay_12v , OUTPUT);
-  pinMode(relay_5v  , OUTPUT);
-  pinMode(relay_vnav, OUTPUT);
-  pinMode(relay_3v,   OUTPUT);
+  pinMode(panic_button , INPUT_PULLUP);
+  pinMode(relay_12v    , OUTPUT      );
+  pinMode(relay_5v     , OUTPUT      );
+  pinMode(relay_vnav   , OUTPUT      );
+  pinMode(relay_3v     , OUTPUT      );
 
   digitalWrite(relay_12v , relay_12v_state );
   digitalWrite(relay_5v  , relay_5v_state  );
@@ -44,76 +39,89 @@ void setup() {
   digitalWrite(relay_3v  , relay_3v_state  );
   
   Serial.begin(9600);
-  // reads state of LEDs
-  pinMode(pin2, INPUT);
-  pinMode(pin3, INPUT);
-  pinMode(pin4, INPUT);
-  pinMode(pin5, INPUT);
 
-  pinMode(pin6, OUTPUT);
-  pinMode(pin7, OUTPUT);
-  pinMode(pin8, OUTPUT);
-  pinMode(pin9, OUTPUT);
+  // Reads state of LEDs
+  pinMode(6, INPUT);
+  pinMode(7, INPUT);
+  pinMode(8, INPUT);
+  pinMode(9, INPUT);
 
 }
 
 void loop() {  
 
-  digitalWrite(pin6, HIGH);
-  digitalWrite(pin7, HIGH);
-  digitalWrite(pin8, HIGH);
-  digitalWrite(pin9, HIGH);
+  if (digitalRead(panic_button) == LOW & !panic) {
+    panic = true;
 
-  // before updating state, check if it has changed from before
-  // if so, invert relay state and print '1' to Xbee
-  if (digitalRead(pin2) != state2) {
-    data = 1;
+    relay_12v_state  = false;
+    relay_5v_state   = false;
+    relay_vnav_state = false;
+    relay_3v_state   = false;
+
+    digitalWrite(relay_12v , LOW);
+    digitalWrite(relay_5v  , LOW);
+    digitalWrite(relay_vnav, LOW);
+    digitalWrite(relay_3v  , LOW);
+
+    delay(200);
+  }
+
+  if (panic) {
+    return;
+  }
+
+  // Before updating state, check if it has changed from before
+  // If so, invert relay state and print '1' to Xbee
+  // Sequential if statements kind of act as queue already,
+  // I think it would be unecessarily complicated to add full FIFO here
+  if (digitalRead(6) != white_state) {
     relay_12v_state = !relay_12v_state;
     xbee.print('1');
+    delay(200);
   } 
 
-  if (digitalRead(pin3) != state3) {
-    data = 2;
+  if (digitalRead(7) != yellow_state) {
     relay_5v_state = !relay_5v_state;
     xbee.print('2');
+    delay(200);
   } 
 
-  if (digitalRead(pin4) != state4) {
-    data = 3;
+  if (digitalRead(8) != red_state) {
     relay_vnav_state = !relay_vnav_state;
     xbee.print('3'); 
+    delay(200);
   } 
 
-  if (digitalRead(pin5) != state5) {
-    data = 4;
+  if (digitalRead(9) != blue_state) {
     relay_3v_state = !relay_3v_state;
     xbee.print('4');
+    delay(200);
   } 
 
-  // serial monitor for debugging
-  Serial.println(data);
+  // Updates state NOW, using 3.3V as output for breadboarding
+  white_state  = digitalRead(6);
+  yellow_state = digitalRead(7);
+  red_state    = digitalRead(8);
+  blue_state   = digitalRead(9);
 
-  // updates state NOW
-  state2 = digitalRead(pin2);
-  state3 = digitalRead(pin3);
-  state4 = digitalRead(pin4);
-  state5 = digitalRead(pin5);
+  // Print states (for debugging)
+  Serial.print("White LED state: ");
+  Serial.print(white_state);
+  Serial.print(" | Yellow LED state: ");
+  Serial.print(yellow_state);
+  Serial.print(" | Red LED state: ");
+  Serial.print(red_state);
+  Serial.print(" | Blue LED state: ");
+  Serial.println(blue_state);
 
-  // print states (for debugging)
+  Serial.print("Button state: ");
+  Serial.println(panic);
 
-  Serial.print("D2 state: ");
-  Serial.print(state2);
-  Serial.print(" | D3 state: ");
-  Serial.print(state3);
-  Serial.print(" | D4 state: ");
-  Serial.print(state4);
-  Serial.print(" | D5 state: ");
-  Serial.println(state5);
-
-  // small delay to prevent spamming the serial monitor too quickly
+  // Small delay to prevent spamming the serial monitor too quickly
+  // Should remove before actual use
   delay(1000);
 
-  // set relay states
+  // Set relay states
   digitalWrite(relay_12v , relay_12v_state );
   digitalWrite(relay_5v  , relay_5v_state  );
   digitalWrite(relay_vnav, relay_vnav_state);
