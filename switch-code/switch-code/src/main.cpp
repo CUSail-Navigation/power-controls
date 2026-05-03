@@ -5,8 +5,12 @@
 // do not have the boat breadboard right now
 SoftwareSerial xbee(11, 12); 
 
-const int panic_button   = 10; // Button, need to change this physically
-bool panic = false;
+const int panic_button = 10; // Button, need to change this physically
+const int boat_status  = 11;
+bool panic       = false;
+bool boat_status = false;
+
+unsigned long last_status = 0;
 
 const int relay_12v  = 5; // White
 const int relay_5v   = 4; // Yellow
@@ -27,6 +31,7 @@ bool blue_state   = false;
 
 void setup() {
   xbee.begin(9600);
+  pinMode(boat_status  , OUTPUT);
   pinMode(panic_button , INPUT_PULLUP);
   pinMode(relay_12v    , OUTPUT      );
   pinMode(relay_5v     , OUTPUT      );
@@ -50,7 +55,7 @@ void setup() {
 
 void loop() {  
 
-  if (digitalRead(panic_button) == LOW & !panic) {
+  if (digitalRead(panic_button) == LOW && !panic) {
     panic = true;
 
     relay_12v_state  = false;
@@ -69,6 +74,16 @@ void loop() {
   if (panic) {
     return;
   }
+
+  if (xbee.available()) {
+    if (xbee.read() == 'W') {
+      last_status = millis();
+    }
+  }
+
+  // Only set boat LED high if it's been less than 7 seconds since last W
+  // Slight timeout slack from 5 seconds
+  digitalWrite(boat_status, (millis() - last_status < 7000));
 
   // Before updating state, check if it has changed from before
   // If so, invert relay state and print '1' to Xbee
