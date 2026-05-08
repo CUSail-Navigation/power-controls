@@ -1,73 +1,84 @@
 #include <Arduino.h>
-#include <SoftwareSerial.h>
 
-SoftwareSerial xbee(2, 3); 
+#define xbee Serial
 
-const int relay_12v  = 7; // red
-const int relay_5v   = 6; // green
-const int relay_vnav = 5; // blue
-const int relay_3v   = 4; // yellow
+const int relay_12v_on   = 3;
+const int relay_12v_off  = 4;
+const int relay_5v_on    = 5;
+const int relay_5v_off   = 6;
+const int relay_vnav_on  = 7;
+const int relay_vnav_off = 8;
+const int relay_3v_on    = 9;
+const int relay_3v_off   = 10;
 
-bool relay_12v_state  = true;
-bool relay_5v_state   = true;
-bool relay_vnav_state = true;
-bool relay_3v_state   = true;
+bool relay_12v_state  = false;
+bool relay_5v_state   = false;
+bool relay_vnav_state = false;
+bool relay_3v_state   = false;
 
 unsigned long prevTime = 0;
 
+#define PULSE_MS 50
+
+void pulseRelay(int onPin, int offPin, bool &state) {
+  int pin = state ? offPin : onPin;
+  state = !state;
+  digitalWrite(pin, HIGH);
+  delay(PULSE_MS);
+  digitalWrite(pin, LOW);
+}
+
 void setup() {
-  xbee.begin(9600); 
+  xbee.begin(9600);
 
-  pinMode(relay_12v , OUTPUT);
-  pinMode(relay_5v  , OUTPUT);
-  pinMode(relay_vnav, OUTPUT);
-  pinMode(relay_3v,   OUTPUT);
+  int pins[] = {relay_12v_on, relay_12v_off, relay_5v_on, relay_5v_off,
+                relay_vnav_on, relay_vnav_off, relay_3v_on, relay_3v_off};
+  for (int i = 0; i < 8; i++) {
+    pinMode(pins[i], OUTPUT);
+    digitalWrite(pins[i], LOW);
+  }
 
-  // Init to off state
-  digitalWrite(relay_12v , relay_12v_state );
-  digitalWrite(relay_5v  , relay_5v_state  );
-  digitalWrite(relay_vnav, relay_vnav_state);
-  digitalWrite(relay_3v  , relay_3v_state  );
+  // Pulse all relays to a known ON state at startup
+  int onPins[] = {relay_12v_on, relay_5v_on, relay_vnav_on, relay_3v_on};
+  for (int i = 0; i < 4; i++) {
+    digitalWrite(onPins[i], HIGH);
+    delay(PULSE_MS);
+    digitalWrite(onPins[i], LOW);
+  }
+  relay_12v_state  = true;
+  relay_5v_state   = true;
+  relay_vnav_state = true;
+  relay_3v_state   = true;
 }
 
 void loop() {
-
   unsigned long currTime = millis();
 
-  // Read from XBee
   if (xbee.available()) {
     char data = xbee.read();
 
     switch (data) {
     case '1':
-        relay_12v_state = !relay_12v_state;
-        xbee.print('1');
-        break;
+      pulseRelay(relay_12v_on, relay_12v_off, relay_12v_state);
+      xbee.print('1');
+      break;
     case '2':
-        relay_5v_state = !relay_5v_state;
-        xbee.print('2');
-        break;
+      pulseRelay(relay_5v_on, relay_5v_off, relay_5v_state);
+      xbee.print('2');
+      break;
     case '3':
-        relay_vnav_state = !relay_vnav_state;
-        xbee.print('3');
-        break;
+      pulseRelay(relay_vnav_on, relay_vnav_off, relay_vnav_state);
+      xbee.print('3');
+      break;
     case '4':
-        relay_3v_state = !relay_3v_state;
-        xbee.print('4');
-        break;
+      pulseRelay(relay_3v_on, relay_3v_off, relay_3v_state);
+      xbee.print('4');
+      break;
     }
   }
 
-  // Set relay states
-  digitalWrite(relay_12v , relay_12v_state );
-  digitalWrite(relay_5v  , relay_5v_state  );
-  digitalWrite(relay_vnav, relay_vnav_state);
-  digitalWrite(relay_3v  , relay_3v_state  );
-
-  // Write to XBee
   if (currTime - prevTime > 5000) {
-    xbee.print('W'); // Send to other XBee
+    xbee.print('W');
     prevTime = currTime;
   }
-
 }
