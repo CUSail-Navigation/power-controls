@@ -60,6 +60,10 @@ void loop() {
     char data = xbee.read();
 
     // Checks current state. If input inverts current state, swap.
+    //  12V Relay: 1 = OFF, 2 = ON
+    //   5V Relay: 3 = OFF, 4 = ON
+    // VNAV Relay: 5 = OFF, 6 = ON
+    // 3.3V Relay: 7 = OFF, 8 = ON
     switch (data) {
     case '1':
       if (relay_12v_state == false) {
@@ -112,6 +116,7 @@ void loop() {
     }
   }
 
+  // Sends a 'W' every 5 seconds, to indicate the connection is alive
   if (currTime - prevTime > 5000) {
     xbee.print('W');
     prevTime = currTime;
