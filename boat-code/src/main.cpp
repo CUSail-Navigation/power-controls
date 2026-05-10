@@ -38,17 +38,19 @@ void setup() {
     digitalWrite(pins[i], LOW);
   }
 
+  delay(PULSE_MS * 2);
+
   // Pulse all relays to a known ON state at startup
-  int onPins[] = {relay_12v_on, relay_5v_on, relay_vnav_on, relay_3v_on};
-  for (int i = 0; i < 4; i++) {
-    digitalWrite(onPins[i], HIGH);
+  for (int i = 0; i < 2; i++) {
     delay(PULSE_MS);
-    digitalWrite(onPins[i], LOW);
+    pulseRelay(relay_12v_on, relay_12v_off, relay_12v_state);
+    delay(PULSE_MS);
+    pulseRelay(relay_5v_on, relay_5v_off, relay_5v_state);
+    delay(PULSE_MS);
+    pulseRelay(relay_vnav_on, relay_vnav_off, relay_vnav_state);
+    delay(PULSE_MS);
+    pulseRelay(relay_3v_on, relay_3v_off, relay_3v_state);
   }
-  relay_12v_state  = true;
-  relay_5v_state   = true;
-  relay_vnav_state = true;
-  relay_3v_state   = true;
 }
 
 void loop() {
@@ -57,22 +59,55 @@ void loop() {
   if (xbee.available()) {
     char data = xbee.read();
 
+    // Checks current state. If input inverts current state, swap.
     switch (data) {
     case '1':
-      pulseRelay(relay_12v_on, relay_12v_off, relay_12v_state);
-      xbee.print('1');
+      if (relay_12v_state == false) {
+        pulseRelay(relay_12v_on, relay_12v_off, relay_12v_state);
+        xbee.print('1');
+      }
       break;
     case '2':
-      pulseRelay(relay_5v_on, relay_5v_off, relay_5v_state);
-      xbee.print('2');
+      if (relay_12v_state == true) {
+        pulseRelay(relay_12v_on, relay_12v_off, relay_12v_state);
+        xbee.print('2');
+      }
       break;
     case '3':
-      pulseRelay(relay_vnav_on, relay_vnav_off, relay_vnav_state);
-      xbee.print('3');
+      if (relay_5v_state == false) {
+        pulseRelay(relay_5v_on, relay_5v_off, relay_5v_state);
+        xbee.print('3');
+      }
       break;
     case '4':
-      pulseRelay(relay_3v_on, relay_3v_off, relay_3v_state);
-      xbee.print('4');
+      if (relay_5v_state == true) {
+        pulseRelay(relay_5v_on, relay_5v_off, relay_5v_state);
+        xbee.print('4');
+      }
+      break;
+    case '5':
+      if (relay_vnav_state == false) {
+        pulseRelay(relay_vnav_on, relay_vnav_off, relay_vnav_state);
+        xbee.print('5');
+      }
+      break;
+    case '6':
+      if (relay_vnav_state == true) {
+        pulseRelay(relay_vnav_on, relay_vnav_off, relay_vnav_state);
+        xbee.print('6');
+      }
+      break;
+    case '7':
+      if (relay_3v_state == false) {
+        pulseRelay(relay_3v_on, relay_3v_off, relay_3v_state);
+        xbee.print('7');
+      }
+      break;
+    case '8':
+      if (relay_3v_state == true) {
+        pulseRelay(relay_3v_on, relay_3v_off, relay_3v_state);
+        xbee.print('8');
+      }
       break;
     }
   }
